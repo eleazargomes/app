@@ -1,0 +1,4 @@
+Flask>=3.0,<4
+requests>=2.31
+gunicorn>=21.2; sys_platform != "win32"
+waitress>=3.0; sys_platform == "win32"

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+# Dados operacionais e credenciais NUNCA vão para o GitHub
+data/*
+!data/.gitkeep
+input/*
+!input/.gitkeep
+*.csv
