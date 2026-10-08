@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frota · Manutenção e Vencimentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+<!-- LOGIN -->
+<section id="view-login" class="min-h-screen flex items-center justify-center p-4 hidden">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 fade-in">
+    <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white grid place-items-center text-2xl mb-4">🚌</div>
+    <h1 class="text-2xl font-bold">Gestão de Frota</h1>
+    <p class="text-sm text-slate-500 mb-6">Entre para acompanhar revisões e vencimentos.</p>
+    <form id="login-form" class="space-y-4" autocomplete="on">
+      <label class="block text-sm font-medium">E-mail
+        <input id="login-email" type="email" required class="field mt-1" autocomplete="username"></label>
+      <label class="block text-sm font-medium">Senha
+        <input id="login-senha" type="password" required class="field mt-1" autocomplete="current-password"></label>
+      <p id="login-erro" class="text-sm text-red-600 hidden"></p>
+      <button class="btn-primary w-full" id="login-btn">Entrar</button>
+    </form>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="view-app" class="hidden">
+  <header class="bg-white border-b sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+      <div class="flex items-center gap-2 mr-2">
+        <span class="w-9 h-9 rounded-lg bg-emerald-500 text-white grid place-items-center">🚌</span>
+        <strong class="hidden sm:block">Gestão de Frota</strong>
+      </div>
+      <nav class="flex gap-1" id="tabs">
+        <button class="tab tab-active" data-tab="painel">Painel</button>
+        <button class="tab" data-tab="criterios">Critérios</button>
+      </nav>
+      <div class="ml-auto flex items-center gap-3">
+        <select id="filtro-filial" class="field !w-auto !py-1.5 text-sm" title="Unidade/Filial"></select>
+        <div class="text-right leading-tight hidden md:block">
+          <div id="user-nome" class="text-sm font-semibold"></div>
+          <div id="user-perfil" class="text-xs text-slate-500"></div>
+        </div>
+        <button id="btn-sair" class="btn-ghost text-sm">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- PAINEL -->
+    <section id="tab-painel" class="space-y-6">
+      <div id="kpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3"></div>
+      <div id="avisos" class="space-y-2"></div>
+
+      <div class="bg-white rounded-2xl shadow-sm border">
+        <div class="p-4 flex flex-wrap items-center gap-3 border-b">
+          <div class="relative flex-1 min-w-[220px]">
+            <input id="busca" type="search" placeholder="Buscar por frota / prefixo / placa / chassi…" class="field pl-9">
+            <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+          </div>
+          <div id="chips" class="flex flex-wrap gap-2"></div>
+          <button id="btn-novo" class="btn-primary">+ Novo veículo</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+              <tr id="thead"></tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="p-3 flex items-center justify-between text-sm text-slate-500 border-t">
+          <span id="contagem"></span>
+          <div class="flex gap-2">
+            <button id="pg-ant" class="btn-ghost">‹ Anterior</button>
+            <button id="pg-prox" class="btn-ghost">Próxima ›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CRITÉRIOS -->
+    <section id="tab-criterios" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border p-5">
+        <h2 class="font-semibold mb-3">Novo / editar critério</h2>
+        <form id="crit-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+          <label class="md:col-span-2 text-sm font-medium">Tipo de chassi
+            <input id="crit-tipo" class="field mt-1" list="lista-chassis" required autocomplete="off"></label>
+          <datalist id="lista-chassis"></datalist>
+          <label class="text-sm font-medium">Plano de KM
+            <input id="crit-plano" type="number" min="1" step="1000" class="field mt-1" required placeholder="30000"></label>
+          <label class="text-sm font-medium">Tempo ativo máx.
+            <div class="flex gap-1 mt-1">
+              <input id="crit-tempo" type="number" min="1" step="1" class="field" required placeholder="15">
+              <select id="crit-unid" class="field !w-24"><option value="anos">anos</option><option value="meses">meses</option></select>
+            </div></label>
+          <label class="text-sm font-medium">Filial
+            <select id="crit-filial" class="field mt-1"></select></label>
+          <button class="btn-primary">Salvar</button>
+        </form>
+        <p id="crit-norm" class="text-sm mt-2 text-slate-500 min-h-[1.25rem]"></p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs uppercase"><tr>
+            <th class="th">Chassi (normalizado)</th><th class="th">Filial</th><th class="th text-right">Plano KM</th>
+            <th class="th text-right">Tempo máx.</th><th class="th">Situação</th><th class="th"></th></tr></thead>
+          <tbody id="crit-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL: BAIXA DE REVISÃO -->
+<div id="modal-baixa" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="flex items-start justify-between mb-4">
+      <div><h3 class="text-lg font-bold">Baixa de revisão</h3><p id="baixa-resumo" class="text-sm text-slate-500"></p></div>
+      <button class="btn-ghost" data-close>✕</button>
+    </div>
+    <div id="baixa-meta" class="rounded-xl bg-slate-50 border p-3 text-sm mb-4"></div>
+    <form id="baixa-form" class="space-y-3">
+      <label class="block text-sm font-medium">Nome completo do responsável *
+        <input id="baixa-resp" class="field mt-1" required minlength="5" maxlength="80"></label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block text-sm font-medium">Nº da Nota Fiscal *
+          <input id="baixa-nf" class="field mt-1" required maxlength="20"></label>
+        <label class="block text-sm font-medium">Data de realização *
+          <input id="baixa-data" type="date" class="field mt-1" required></label>
+      </div>
+      <label class="block text-sm font-medium">Observações do serviço
+        <textarea id="baixa-obs" rows="3" maxlength="1000" class="field mt-1"></textarea></label>
+      <p id="baixa-erro" class="text-sm text-red-600 hidden"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" class="btn-ghost" data-close>Cancelar</button>
+        <button class="btn-primary" id="baixa-btn">Confirmar e Progredir Ciclo</button>
+      </div>
+    </form>
+    <details class="mt-4"><summary class="text-sm font-medium cursor-pointer">Histórico de revisões</summary>
+      <div id="baixa-hist" class="mt-2 text-sm space-y-1"></div></details>
+  </div>
+</div>
+
+<!-- MODAL: NOVO VEÍCULO -->
+<div id="modal-veiculo" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="flex items-start justify-between mb-4">
+      <h3 class="text-lg font-bold">Cadastrar veículo</h3><button class="btn-ghost" data-close>✕</button>
+    </div>
+    <form id="veic-form" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block text-sm font-medium">Placa / Prefixo *
+          <input id="veic-prefixo" class="field mt-1" required maxlength="20"></label>
+        <label class="block text-sm font-medium">Ano do chassi *
+          <input id="veic-ano" type="number" min="1950" class="field mt-1" required></label>
+      </div>
+      <label class="block text-sm font-medium">Tipo de chassi *
+        <input id="veic-tipo" class="field mt-1" list="lista-chassis" required autocomplete="off"></label>
+      <p id="veic-norm" class="text-sm text-slate-500 min-h-[1.25rem]"></p>
+      <label class="block text-sm font-medium">Filial / Unidade *
+        <select id="veic-filial" class="field mt-1"></select></label>
+      <p id="veic-erro" class="text-sm text-red-600 hidden"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" class="btn-ghost" data-close>Cancelar</button>
+        <button class="btn-primary" id="veic-btn">Cadastrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+<div id="loader" class="hidden fixed inset-0 z-40 bg-white/60 grid place-items-center"><div class="spinner"></div></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
